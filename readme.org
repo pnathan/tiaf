@@ -1,1 +1,110 @@
-studchain
+* studchain
+
+version 0.0.1-aleph
+
+** intro
+`studchain` is a blockchain implementation designed for several purposes.
+
+Blockchains as linear merkle trees are an interesting data
+structure. Note that they actually are forming a degenerate tree form!
+Having the ability to have a _node_ join a consensus database, gain
+information, and continue working, is a very useful property!
+
+Then, too, exploring the applications of a non-coin blockchain is
+interesting!
+
+
+Notably, similar tools exist in the for-pay space:
+
+- https://www.bigchaindb.com/
+- https://postchain-docs.readthedocs.io/en/latest/
+- https://www.chainifydb.com/
+- https://www.vechain.org/
+
+An open source distributed ledger (Hyperledger) exists. "it seems
+compplicated" to put it mildly. Too, blockchain the data structure is
+interesting.
+
+
+So. `studchain` is different.
+
+studchain is designed to be deployed as a trustful distributed
+datastore. The authority to mint a new block or perform a new
+transaction is granted by an exterior authority.
+
+** Justification
+
+The author of `studchain` comes from a conventional SRE / CS major
+corporation background, and considers that, for work worth something,
+trust is _required_. Consider a Kubernetes deployment: the SREs of
+this system have nearly perfect control of the entire enterprise. They
+will deploy tools such as Consul or Linkerd to enforce peer to peer
+authority, and work in conjuction with IT and application developers
+to ensure that only authorized individuals can access the controlling
+routes.
+
+
+** Algorithms
+
+New blocks in studcoin are simply created by an API call. The caller
+is presumed to have authorization.
+
+
+Transactions as implemented in bitcoin with the 'mempool' are derived
+from the requirement of "proof of work/stake", where a miner has to
+put in time.
+
+Design-wise, that's essentially a FIFO-ish data structure of
+non-commmited writes that is shared across all peers.
+
+Since studcoin does not implement any system of mining, data is
+currenly only hangable on the block itself.
+
+
+** Routes
+
+REST api routes in (very draft) state. HTTP verbs to be added, which
+will simplify the endpoints.
+
+
+|--------------------+------------------------------------------+---|
+| API route          | description                              |   |
+|--------------------+------------------------------------------+---|
+| /api/chain/get     | gets whole chain                         |   |
+| /api/chain/append  | uploads candidate chain                  |   |
+| /api/chain/compare | validates candidate chain                |   |
+|--------------------+------------------------------------------+---|
+| /api/block/append  | adds data                                |   |
+|--------------------+------------------------------------------+---|
+| /api/peers/set     | sets a peer list to pull chains from     |   |
+| /api/peers/get     | retrieves the currently set peer list    |   |
+| /api/peers/sweep   | sweeps the set peers to get their chains |   |
+|--------------------+------------------------------------------+---|
+
+
+
+** Naming
+
+A stud chain is a means to control an unruly horse.
+
+> A stud chain is a psychological tool – the weight that the horse
+> feels on their nose reminds them that there are consequences for
+> dangerous behavior, and as a consequence, many horses won’t even
+> try.  -- https://curlyfarm.com/horse-stud-chain/
+
+Blockchains attract notoriously sketchy behavior. This is intended to
+open up a space where 'coin' does not apply and interesting concepts
+can be developed without regard to direct financial incentives or
+cryptocurrency.
+
+** Licensing
+
+Studchain is AGPL3.  This means that if you deploy this and it
+interacts in *any fashion* with a third party (not your corporation),
+you must offer the third party studchain's code, *plus* all your
+modifications: AGPL3 is viral.
+
+If you want to deploy this commercially and lose the license, along
+with, optionally, a support contract, contact me and we will arrange a
+commercial license in conformance with your purchasing department's
+policies.
