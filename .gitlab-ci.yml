@@ -8,7 +8,7 @@ image: golang:1.18beta1-alpine3.15
 
 variables:
   # Please edit to your GitLab project
-  REPO_NAME: gitlab.com/pnathan/studchain
+  REPO_NAME: gitlab.com/pnathan/tiaf
 
 # The problem is that to be able to use go get, one needs to put
 # the repository in the $GOPATH. So for example if your gitlab domain
@@ -36,7 +36,7 @@ format:
 compile:
   stage: build
   script:
-    - go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary
+    - go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/tiaf
   artifacts:
     paths:
-      - studchain
+      - tiaf

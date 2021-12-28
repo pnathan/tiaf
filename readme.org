@@ -1,9 +1,16 @@
-* studchain
+* tiaf
 
 version 0.0.1-aleph
 
 ** intro
-`studchain` is a blockchain implementation designed for several purposes.
+
+Blockchains attract notoriously sketchy behavior. This is intended to
+open up a space where 'coin' does not apply and interesting concepts
+can be developed without regard to direct financial incentives or
+cryptocurrency.
+
+
+So, `tiaf` is a blockchain implementation designed for several purposes.
 
 Blockchains as linear merkle trees are an interesting data
 structure. Note that they actually are forming a degenerate tree form!
@@ -22,19 +29,19 @@ Notably, similar tools exist in the for-pay space:
 - https://www.vechain.org/
 
 An open source distributed ledger (Hyperledger) exists. "it seems
-compplicated" to put it mildly. Too, blockchain the data structure is
+complicated" to put it mildly. Too, blockchain the data structure is
 interesting.
 
 
-So. `studchain` is different.
+So. `tiaf` is different.
 
-studchain is designed to be deployed as a trustful distributed
+tiaf is designed to be deployed as a trustful distributed
 datastore. The authority to mint a new block or perform a new
 transaction is granted by an exterior authority.
 
 ** Justification
 
-The author of `studchain` comes from a conventional SRE / CS major
+The author of `tiaf` comes from a conventional SRE / CS major
 corporation background, and considers that, for work worth something,
 trust is _required_. Consider a Kubernetes deployment: the SREs of
 this system have nearly perfect control of the entire enterprise. They
@@ -82,26 +89,25 @@ will simplify the endpoints.
 |--------------------+------------------------------------------+---|
 
 
+** deployment
+
+There's a fairly hax makefile and Pulumi configuration for kubernetes. It's very prototype.
 
 ** Naming
 
-A stud chain is a means to control an unruly horse.
+tiaf: fiat, backwards, and misspelled.
 
-> A stud chain is a psychological tool – the weight that the horse
-> feels on their nose reminds them that there are consequences for
-> dangerous behavior, and as a consequence, many horses won’t even
-> try.  -- https://curlyfarm.com/horse-stud-chain/
+it's not commodity money, it's not cryptocurrency. Calling it a currency is
+*not even backwards*.
 
-Blockchains attract notoriously sketchy behavior. This is intended to
-open up a space where 'coin' does not apply and interesting concepts
-can be developed without regard to direct financial incentives or
-cryptocurrency.
+
+taif is a city in Arabia, and looks beautiful: no relation.
 
 ** Licensing
 
-Studchain is AGPL3.  This means that if you deploy this and it
+tiaf is AGPL3.  This means that if you deploy this and it
 interacts in *any fashion* with a third party (not your corporation),
-you must offer the third party studchain's code, *plus* all your
+you must offer the third party tiaf's code, *plus* all your
 modifications: AGPL3 is viral.
 
 If you want to deploy this commercially and lose the license, along

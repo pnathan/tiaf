@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: tiaf
+  name: tiaf
+  labels:
+    app: tiaf
+spec:
+  ports:
+    - port: 80
+      targetPort: 1337
+  clusterIP: None
+  selector:
+    app: tiaf
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: tiaf
+  name: tiaf
+spec:
+  selector:
+    matchLabels:
+      app: tiaf # has to match .spec.template.metadata.labels
+  serviceName: "tiaf"
+  replicas: 3 # by default is 1
+#  minReadySeconds: 3 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: tiaf # has to match .spec.selector.matchLabels
+        version: "v1"
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: tiaf
+          image: gcr.io/sapient-fabric-207305/tiaf:v3
+          ports:
+            - containerPort: 1337
