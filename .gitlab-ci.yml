@@ -22,7 +22,6 @@ before_script:
   - cd $GOPATH/src/$REPO_NAME
   -  apk update && apk upgrade && apk add --no-cache bash git
 stages:
-#  - test
   - build
   - deploy
 
