@@ -140,7 +140,7 @@ func putPeers(w http.ResponseWriter, r *http.Request) {
 func getPeers(w http.ResponseWriter, r *http.Request) {
 	GLOBAL_PEERS.Lock()
 	defer GLOBAL_PEERS.Unlock()
-	text, err := json.Marshal(GLOBAL_PEERS)
+	text, err := json.Marshal(GLOBAL_PEERS.Peers)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte("err"))
