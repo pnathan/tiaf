@@ -22,21 +22,23 @@ before_script:
   - cd $GOPATH/src/$REPO_NAME
   -  apk update && apk upgrade && apk add --no-cache bash git
 stages:
-  - test
+#  - test
   - build
   - deploy
 
 format:
   stage: test
   script:
-    - go fmt $(go list ./... | grep -v /vendor/)
-    - go vet $(go list ./... | grep -v /vendor/)
-    - go test -race $(go list ./... | grep -v /vendor/)
+    - CGO_ENABLED=0 go fmt $(go list ./... | grep -v /vendor/)
+    - CGO_ENABLED=0 go vet $(go list ./... | grep -v /vendor/)
+    - CGO_ENABLED=0 go test $(go list ./... | grep -v /vendor/)
 
 compile:
   stage: build
   script:
-    - go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/tiaf
+    - CGO_ENABLED=0 go build -o tiaf-client src/cmd/client/main.go
+    - CGO_ENABLED=0 go build -o tiaf src/cmd/server/main.go
   artifacts:
     paths:
       - tiaf
+      - tiaf-client
