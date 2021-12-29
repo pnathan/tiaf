@@ -20,7 +20,8 @@ before_script:
   - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
   - ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
   - cd $GOPATH/src/$REPO_NAME
-
+  -  apk update && apk upgrade && \
+    apk add --no-cache bash git
 stages:
   - test
   - build
