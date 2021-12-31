@@ -247,8 +247,34 @@ func Default(w http.ResponseWriter, r *http.Request) {
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	index := `tiaf: the non-currency blockchain tool`
+	index := `<html>
+   <head>      
+      <script type = "text/javascript">
+			function setChainDiv(data) {
+				console.log(data);
+                let pp = JSON.stringify(data["block_list"],null,8);
+				document.getElementById("chain").innerHTML=pp;
+			}
+             function viewChain() {
+
+				fetch('/api/chain')
+				.then(response => response.json())
+				.then(setChainDiv);
+            }
+      </script>     
+   </head>
+   
+   <body>
+<h1> tiaf</h1>
+      <input type = "button" onclick = "viewChain()" value = "ViewChain" />
+		<pre><div  id="chain"></div></pre>
+
+<hr>
+
+   </body>  
+</html>`
 	fmt.Fprintf(w, index)
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -263,6 +289,26 @@ func loggerHandler(h http.Handler) http.Handler {
 		h.ServeHTTP(w, r)
 		log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
 	})
+}
+
+func fastPeerage(peers *string) {
+	log.Info("Peers file provided...reading", zap.String("filename", *peers))
+	filedata, err := ioutil.ReadFile(*peers)
+	if err != nil {
+		log.Error("Unable to read peer file", zap.String("filename", *peers), zap.Error(err))
+		return
+	}
+	peersStruct := &tiafapi.Peerage{}
+	if err := json.Unmarshal(filedata, peersStruct); err != nil {
+		log.Error("unable to decode peer file", zap.String("filename", *peers), zap.Error(err))
+		return
+	}
+
+	GLOBAL_PEERS.Lock()
+	GLOBAL_PEERS.Peers = peersStruct.Peers
+	GLOBAL_PEERS.Unlock()
+
+	GLOBAL_CURRENT_SWEEP_STATE.EnableSweeping()
 }
 
 //////////////////////////////////////////////////////////////
@@ -305,23 +351,7 @@ func main() {
 		fastPeerage(peers)
 	}
 
-	go func() {
-		// 10 seconds before we startup...
-		time.Sleep(time.Second * 1)
-		// never ending loop
-		for {
-			// [3, 20)
-			sleepTime := 3 + time.Duration(rand.Intn(17))
-			if GLOBAL_CURRENT_SWEEP_STATE.IsSweeping() {
-				log.Printf("autosweeper beginning sweep")
-				internalSweeper()
-				log.Printf(" autosweeper sleeping %d seconds", sleepTime)
-			}
-
-			d := time.Second * sleepTime
-			time.Sleep(d)
-		}
-	}()
+	go sweeperDaemon()
 
 	srv := &http.Server{
 		Handler:      errorChain.Then(r),
@@ -333,22 +363,20 @@ func main() {
 	log.Fatal("server failure", zap.Error(srv.ListenAndServe()))
 }
 
-func fastPeerage(peers *string) {
-	log.Info("Peers file provided...reading", zap.String("filename", *peers))
-	filedata, err := ioutil.ReadFile(*peers)
-	if err != nil {
-		log.Error("Unable to read peer file", zap.String("filename", *peers), zap.Error(err))
-		return
-	}
-	peersStruct := &tiafapi.Peerage{}
-	if err := json.Unmarshal(filedata, peersStruct); err != nil {
-		log.Error("unable to decode peer file", zap.String("filename", *peers), zap.Error(err))
-		return
-	}
+func sweeperDaemon() {
+	// 10 seconds before we startup...
+	time.Sleep(time.Second * 1)
+	// never ending loop
+	for {
+		// [3, 20)
+		sleepTime := 3 + time.Duration(rand.Intn(17))
+		if GLOBAL_CURRENT_SWEEP_STATE.IsSweeping() {
+			log.Printf("autosweeper beginning sweep")
+			internalSweeper()
+			log.Printf(" autosweeper sleeping %d seconds", sleepTime)
+		}
 
-	GLOBAL_PEERS.Lock()
-	GLOBAL_PEERS.Peers = peersStruct.Peers
-	GLOBAL_PEERS.Unlock()
-
-	GLOBAL_CURRENT_SWEEP_STATE.EnableSweeping()
+		d := time.Second * sleepTime
+		time.Sleep(d)
+	}
 }

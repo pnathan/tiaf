@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: tiaf
+  name: tiaf
+  labels:
+    app: tiaf
+spec:
+  ports:
+    - port: 80
+      targetPort: 1337
+  clusterIP: None
+  selector:
+    app: tiaf
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: tiaf
+  name: tiaf
+  labels:
+    app: tiaf
+data:
+  peers.json: |
+    { "peers" :  [ "https://tiaf.upside-down-research.com" ]}
