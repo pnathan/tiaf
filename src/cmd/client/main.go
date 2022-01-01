@@ -7,8 +7,10 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/akamensky/argparse"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"gitlab.com/pnathan/tiaf/src/lib/log"
@@ -21,7 +23,7 @@ func MustMarshal(v any) []byte {
 	encoder.SetIndent("", "  ")
 	err := encoder.Encode(v)
 	if err != nil {
-		panic(err)
+		log.Fatal("failed to marshal", zap.Error(err))
 	}
 
 	return b.Bytes()
@@ -55,6 +57,10 @@ func main() {
 	peerSweepEnable := parser.NewCommand("peer-sweep-enable", "enable automatic sweeps")
 	peerSweepDisable := parser.NewCommand("peer-sweep-enable", "disable automatic sweeps")
 
+	recordData := parser.NewCommand("record", "puts data in the fifo queue for the network")
+	recordDataFile := recordData.String("f", "file", &argparse.Options{Required: false, Help: "file of data"})
+	recordDataCLI := recordData.String("d", "data", &argparse.Options{Required: false, Help: "query for data"})
+
 	// Parse input
 	err := parser.Parse(os.Args)
 	if err != nil {
@@ -83,7 +89,23 @@ func main() {
 		}
 		fmt.Println(string(MustMarshal(c)))
 	} else if compareChainCmd.Happened() {
-		fmt.Println("not implemented")
+		data, err := ioutil.ReadFile(*file)
+		if err != nil {
+			Moan(err)
+		}
+		c := &tiafapi.Chain{}
+		if err := json.Unmarshal(data, c); err != nil {
+			Moan(err)
+		}
+		newer, err := tiafapi.MeasureChain(*c, *endpoint)
+		if err != nil {
+			Moan(err)
+		}
+		if newer {
+			fmt.Printf("the submitted chain is longer")
+		} else {
+			fmt.Printf("we are not longer")
+		}
 	} else if putDataCmd.Happened() {
 		var input string
 		if *fileData != "" {
@@ -131,6 +153,39 @@ func main() {
 		}
 	} else if peerSweepDisable.Happened() {
 		if err := tiafapi.DeleteAutoSweeps(*endpoint); err != nil {
+			Moan(err)
+		}
+	} else if recordData.Happened() {
+		var input string
+		if *recordDataFile != "" && *recordDataCLI != "" {
+			Moan(fmt.Errorf("can't set input on cli and a datafile"))
+		} else if *recordDataFile != "" {
+			filedata, err := ioutil.ReadFile(*recordDataFile)
+			if err != nil {
+				log.Fatal("unable to read file", zap.String("filename", *fileData), zap.Error(err))
+			}
+			input = string(filedata)
+		} else if *recordDataCLI != "" {
+			input = *recordDataCLI
+		} else {
+			sin, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				Moan(err)
+			}
+			input = string(sin)
+		}
+
+		newuuid, err := uuid.NewUUID()
+		if err != nil {
+			Moan(err)
+		}
+		data := &tiafapi.Record{
+			Uuid:      newuuid,
+			Timestamp: time.Now().Unix(),
+			Entry:     input,
+		}
+
+		if err := tiafapi.PutRecord(data, *endpoint); err != nil {
 			Moan(err)
 		}
 	} else {

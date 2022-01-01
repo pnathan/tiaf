@@ -9,7 +9,7 @@ import (
 var logger *zap.Logger
 
 func init() {
-	logger, _ = zap.NewProduction()
+	logger, _ = zap.NewDevelopment()
 }
 
 func Printf(msg string, s ...any) {

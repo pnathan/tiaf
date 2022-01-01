@@ -5,17 +5,121 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/crypto/sha3"
+
+	"github.com/google/uuid"
 
 	"gitlab.com/pnathan/tiaf/src/lib/log"
 
 	"gitlab.com/pnathan/tiaf/src/lib/utility"
 )
 
+type Record struct {
+	// Uuid should be randomly generated for each record.
+	Uuid uuid.UUID `json:"uuid"`
+	// Timestamp should be the time the record is synthesized.
+	Timestamp int64 `json:"unixtime"`
+	// Some random slew of bytes
+	Entry string `json:"entry"`
+	// hash is the
+	hash string // string to allow != compares
+}
+
+func (r Record) GetHash() []byte {
+	if r.hash == "" {
+		bin, err := r.Uuid.MarshalBinary()
+		if err != nil {
+			// never will happen, viewing the source of MarshalBinary...
+			// it always returns nil
+		}
+		bytearray := string(utility.Concat(utility.IntToBytes(r.Timestamp), bin, []byte(r.Entry)))
+		sha3.NewShake256()
+		h := make([]byte, 64)
+		// Compute a 64-byte Hash of buf and put it in h.
+		sha3.ShakeSum256(h, []byte(bytearray))
+		r.hash = string(h)
+	}
+	return []byte(r.hash)
+}
+
+func (r Record) Equal(other *Record) bool {
+	return r.hash == other.hash
+}
+
+type RecordCollection struct {
+	Items []Record `json:"items"`
+}
+
+func (r *RecordCollection) Equal(b RecordCollection) bool {
+	if len(b.Items) != len(r.Items) {
+		return false
+	}
+	for idx, e := range r.Items {
+		if e != b.Items[idx] {
+			return false
+		}
+	}
+	return true
+}
+
+func (r *RecordCollection) String() string {
+	recs := []byte{}
+	flag := true
+	length := len(r.Items)
+	for idx, r := range r.Items {
+		recs = append(recs, []byte(strconv.FormatInt(int64(r.Timestamp), 10)+r.Entry)...)
+		if flag || idx == length-1 {
+			recs = append(recs, []byte(", ")...)
+		}
+		flag = false
+	}
+
+	return string(recs)
+}
+
+func (r *RecordCollection) GetHash() []byte {
+	data := []byte{}
+	for _, e := range r.Items {
+
+		data = append(data, e.GetHash()...)
+	}
+	return data
+}
+
+func PutRecord(r *Record, addr string) error {
+	text, err := json.Marshal(r)
+	if err != nil {
+		return err
+	}
+	formulatedAddress := fmt.Sprintf("%v/api/record", addr)
+
+	resp, err := httpPut(formulatedAddress, text)
+	if err != nil {
+		log.Printf("error writing peer %v", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest:
+		return fmt.Errorf("bad request")
+	case http.StatusNotAcceptable:
+		return fmt.Errorf("already seen this block")
+	case http.StatusInternalServerError:
+		return fmt.Errorf("something went sideways")
+	case http.StatusCreated:
+	case http.StatusOK:
+	}
+
+	return nil
+}
+
 // BlockData is a serialization structure
+// Presuming that Data is optionally sequence of Entries...
 type BlockData struct {
 	Data string `json:"data"`
 }
@@ -58,7 +162,7 @@ func (chain *Chain) ValidateChain() bool {
 	return true
 }
 
-func (chain *Chain) AppendBlock(data Datatype) error {
+func (chain *Chain) AppendBlock(data RecordCollection) error {
 	sz := uint64(len(chain.BlockList))
 	prior := chain.BlockList[sz-1]
 	timeOfGeneration := time.Now()
@@ -79,23 +183,26 @@ func (chain *Chain) AppendBlock(data Datatype) error {
 
 type Hashtype []byte
 
-type Datatype string
-
 // Block is the serialization of a block.
 type Block struct {
-	Index        uint64    `json:"index"`
-	PreviousHash Hashtype  `json:"previous_hash"`
-	Timestamp    time.Time `json:"timestamp"`
-	Hash         Hashtype  `json:"hash"`
-	Data         Datatype  `json:"data"`
+	Index        uint64           `json:"index"`
+	PreviousHash Hashtype         `json:"previous_hash"`
+	Timestamp    time.Time        `json:"timestamp"`
+	Hash         Hashtype         `json:"hash"`
+	Data         RecordCollection `json:"data"`
 }
 
 func Genesis() *Block {
 	idx := uint64(0)
-	starter := "בְּרֵאשִׁ֖ית בָּרָ֣א"
+	starter := RecordCollection{Items: []Record{
+		{
+			Timestamp: time.Date(-3761, 1, 1, 1, 1, 1, 1, time.UTC).Unix(),
+			Entry:     "בְּרֵאשִׁ֖ית בָּרָ֣א"},
+	},
+	}
 	priorHash := []byte{0xDE, 0xEA, 0xD, 0xBE, 0xFF}
 	genesisTime := time.Date(1, 1, 1, 1, 1, 1, 1, time.UTC)
-	hash, err := CalculateHash(idx, genesisTime, priorHash, Datatype(starter))
+	hash, err := CalculateHash(idx, genesisTime, priorHash, starter)
 	if err != nil {
 		log.Fatal("System failure: unable to validate hash of Genesis block", zap.Error(err))
 	}
@@ -104,7 +211,7 @@ func Genesis() *Block {
 		PreviousHash: priorHash,
 		Timestamp:    genesisTime,
 		Hash:         hash,
-		Data:         Datatype(starter),
+		Data:         starter,
 	}
 }
 
@@ -124,19 +231,21 @@ func (b Block) Equal(other Block) bool {
 		bytes.Equal(b.PreviousHash, other.PreviousHash) &&
 		b.Timestamp == other.Timestamp &&
 		bytes.Equal(b.Hash, other.Hash) &&
-		b.Data == b.Data
+		b.Data.Equal(other.Data)
 }
 
 func (b Block) String() string {
-	return fmt.Sprintf("> %v | %v | %x | %x | %v", b.Index, b.Timestamp.Unix(), b.PreviousHash, b.Hash, string(b.Data))
+	return fmt.Sprintf("> %v | %v | %x | %x | %v", b.Index, b.Timestamp.Unix(), b.PreviousHash, b.Hash, b.Data.String())
 }
 
 func (b Block) CalculateHash() (Hashtype, error) {
 	return CalculateHash(b.Index, b.Timestamp, b.PreviousHash, b.Data)
 }
 
-func CalculateHash(index uint64, timestamp time.Time, prior Hashtype, data Datatype) (Hashtype, error) {
-	buf := utility.Concat(utility.UintToBytes(index), []byte(prior), utility.IntToBytes(timestamp.Unix()), []byte(data))
+func CalculateHash(index uint64, timestamp time.Time, prior Hashtype, records RecordCollection) (Hashtype, error) {
+	data := records.GetHash()
+
+	buf := utility.Concat(utility.UintToBytes(index), []byte(prior), utility.IntToBytes(timestamp.Unix()), data)
 
 	sha3.NewShake256()
 	h := make([]byte, 64)
@@ -152,6 +261,7 @@ type Peerage struct {
 const (
 	http_put    = "PUT"
 	http_delete = "DELETE"
+	http_post   = "POST"
 )
 
 func httpPut(addr string, text []byte) (*http.Response, error) {
@@ -162,18 +272,22 @@ func httpDelete(addr string, text []byte) (*http.Response, error) {
 	return httpMethod(http_delete, addr, text)
 }
 
+func httpPost(addr string, text []byte) (*http.Response, error) {
+	return httpMethod(http_post, addr, text)
+}
+
 func httpMethod(method, addr string, text []byte) (*http.Response, error) {
 	log.Info("Reading peer", zap.String("endpoint", addr))
 	buf := bytes.NewBuffer(text)
 	client := &http.Client{}
 	req, err := http.NewRequest(method, addr, buf)
 	if err != nil {
-		log.Warn("http error", zap.Error(err))
+		log.Warn("http error", zap.Error(err), zap.String("host", addr))
 		return nil, err
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Warn("http error", zap.Error(err))
+		log.Warn("http error", zap.Error(err), zap.String("host", addr))
 		return nil, err
 	}
 
@@ -300,7 +414,7 @@ func PutChain(c Chain, addr string) error {
 
 	resp, err := httpPut(formulatedAddress, text)
 	if err != nil {
-		log.Printf("error reading peer %v", err)
+		log.Printf("error writing peer %v", err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -313,6 +427,33 @@ func PutChain(c Chain, addr string) error {
 	}
 
 	return nil
+}
+
+// MeasureChain returns whether c is more acceptable or not than the chain at addr
+func MeasureChain(c Chain, addr string) (bool, error) {
+	text, err := json.Marshal(c)
+	if err != nil {
+		return false, err
+	}
+	formulatedAddress := fmt.Sprintf("%v/api/chain/compare", addr)
+
+	resp, err := httpPost(formulatedAddress, text)
+	if err != nil {
+		log.Printf("error writing peer %v", err)
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest:
+		return false, fmt.Errorf("bad request")
+	case http.StatusOK:
+		return false, nil
+	case http.StatusAccepted:
+		return true, nil
+	}
+
+	return false, fmt.Errorf("contract broken")
 }
 
 func GetChain(addr string) (*Chain, error) {
