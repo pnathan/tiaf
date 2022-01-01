@@ -1,6 +1,6 @@
 * tiaf
 
-version 0.0.1-aleph
+version 0.0.1-bet
 
 ** intro
 
@@ -53,8 +53,8 @@ routes.
 
 ** Algorithms
 
-New blocks in studcoin are simply created by an API call. The caller
-is presumed to have authorization.
+New blocks in studcoin may be created by an API call. The caller is
+presumed to have authorization.
 
 
 Transactions as implemented in bitcoin with the 'mempool' are derived
@@ -64,8 +64,11 @@ put in time.
 Design-wise, that's essentially a FIFO-ish data structure of
 non-commmited writes that is shared across all peers.
 
-Since studcoin does not implement any system of mining, data is
-currenly only hangable on the block itself.
+This, however, is unrelated to proofs for mining, and thus can be
+implemented as, suprisingly, a FIFO queue. tiaf has done so; the
+contents of the queue are broadcast on reception. Double entry is
+forbidden by hashing the inputs and maintaining a record of what's
+already been seen in the chain and the current mempool.
 
 
 ** Routes
@@ -73,21 +76,42 @@ currenly only hangable on the block itself.
 REST api routes in (very draft) state. HTTP verbs to be added, which
 will simplify the endpoints.
 
+|----------+------+---------------|
+| ui route | verb | description   |
+|----------+------+---------------|
+| /        | GET  | stab at JS ui |
+|----------+------+---------------|
 
-|--------------------+------------------------------------------+---|
-| API route          | description                              |   |
-|--------------------+------------------------------------------+---|
-| /api/chain/get     | gets whole chain                         |   |
-| /api/chain/append  | uploads candidate chain                  |   |
-| /api/chain/compare | validates candidate chain                |   |
-|--------------------+------------------------------------------+---|
-| /api/block/append  | adds data                                |   |
-|--------------------+------------------------------------------+---|
-| /api/peers/set     | sets a peer list to pull chains from     |   |
-| /api/peers/get     | retrieves the currently set peer list    |   |
-| /api/peers/sweep   | sweeps the set peers to get their chains |   |
-|--------------------+------------------------------------------+---|
 
+|-----------------------+-----------+--------------------------------------------------------------------------+---|
+| API route             | HTTP verb | description                                                              |   |
+|-----------------------+-----------+--------------------------------------------------------------------------+---|
+| /api/statistics       | GET       | human readable stats                                                     |   |
+|-----------------------+-----------+--------------------------------------------------------------------------+---|
+| /healthz              | GET       | is the http server responding? note, does not indicate logical readiness |   |
+|-----------------------+-----------+--------------------------------------------------------------------------+---|
+| /api/chain/get        | GET       | gets whole chain                                                         |   |
+| /api/chain/append     | PUT       | uploads candidate chain                                                  |   |
+| /api/chain/compare    | POST      | validates candidate chain                                                |   |
+|-----------------------+-----------+--------------------------------------------------------------------------+---|
+| /api/block            | PUT       | adds data and commits a block                                            |   |
+|-----------------------+-----------+--------------------------------------------------------------------------+---|
+| /api/record           | PUT       | adds data to the mempool, which also triggers a broadcast to peers       |   |
+|-----------------------+-----------+--------------------------------------------------------------------------+---|
+| /api/peers            | PUT       | sets a peer list to pull chains from                                     |   |
+| /api/peers            | GET       | retrieves the currently set peer list                                    |   |
+|-----------------------+-----------+--------------------------------------------------------------------------+---|
+| /api/peers/sweep      | POST      | sweeps the set peers to get their chains                                 |   |
+| /api/peers/sweep/auto | PUT       | enables autosweeping peers                                               |   |
+| /api/peers/sweep/auto | DELETE    | disables autosweeping peers                                              |   |
+|-----------------------+-----------+--------------------------------------------------------------------------+---|
+
+
+** Further work
+
+   - Make tiaf queryable
+   - Spill large chains to disk
+   - Avoid sharing the entire chain when comparing lengths.
 
 ** deployment
 

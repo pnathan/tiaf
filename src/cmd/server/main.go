@@ -54,6 +54,8 @@ func appendBlock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	record := []tiafapi.Record{{Timestamp: time.Now().Unix(), Entry: data.Data}}
+	// TODO: validate this data isn't a double-put.
+	// if ! HasSeen(record)...
 	if err := GLOBAL_CHAIN.AppendBlock(tiafapi.RecordCollection{Items: record}); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("%v", err)
@@ -436,7 +438,7 @@ func Default(w http.ResponseWriter, r *http.Request) {
 
 func Index(w http.ResponseWriter, r *http.Request) {
 	index := `<html>
-   <head>      
+   <head>
       <script type = "text/javascript">
 			function setChainDiv(data) {
 				console.log(data);
@@ -449,9 +451,9 @@ func Index(w http.ResponseWriter, r *http.Request) {
 				.then(response => response.json())
 				.then(setChainDiv);
             }
-      </script>     
+      </script>
    </head>
-   
+
    <body>
 <h1> tiaf</h1>
       <input type = "button" onclick = "viewChain()" value = "ViewChain" />
@@ -459,7 +461,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 <hr>
 
-   </body>  
+   </body>
 </html>`
 	fmt.Fprintf(w, index)
 
