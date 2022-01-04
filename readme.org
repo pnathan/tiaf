@@ -53,7 +53,7 @@ routes.
 
 ** Algorithms
 
-New blocks in studcoin may be created by an API call. The caller is
+New blocks in tiaf may be created by an API call. The caller is
 presumed to have authorization.
 
 
