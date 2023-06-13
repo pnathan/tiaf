@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  tiaf-1:
+    image: tiaf
+    entrypoint: "/tiaf-server --ip 0.0.0.0 --port 1337 --upstreams tiaf-2 --downstreams tiaf-2"
+    deploy:
+      replicas: 1
+    ports:
+      - "1337:1337"
+    configs:
+      - source: my_config
+        target: /config
+        mode: 0666
+  tiaf-2:
+    image: tiaf
+    entrypoint: "/tiaf-server --ip 0.0.0.0 --port 1338 --upstreams tiaf-1 --downstreams tiaf-1"
+    deploy:
+      replicas: 1
+    ports:
+      - "1338:1338"
+    configs:
+      - source: my_config
+        target: /config
+        mode: 0666
+configs:
+  my_config:
+    file: ./example/server-config.toml

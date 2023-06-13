@@ -1,6 +1,6 @@
 * tiaf
 
-version 0.0.1-bet
+version 0.1.0-gimel-rc
 
 ** intro
 
@@ -46,7 +46,7 @@ corporation background, and considers that, for work worth something,
 trust is _required_. Consider a Kubernetes deployment: the SREs of
 this system have nearly perfect control of the entire enterprise. They
 will deploy tools such as Consul or Linkerd to enforce peer to peer
-authority, and work in conjuction with IT and application developers
+authority, and work in conjunction with IT and application developers
 to ensure that only authorized individuals can access the controlling
 routes.
 
@@ -72,6 +72,8 @@ already been seen in the chain and the current mempool.
 
 
 ** Routes
+
+**(TODO: verify these - code is fully rewritten since -bet edition)**
 
 REST api routes in (very draft) state. HTTP verbs to be added, which
 will simplify the endpoints.
@@ -134,7 +136,7 @@ interacts in *any fashion* with a third party (not your corporation),
 you must offer the third party tiaf's code, *plus* all your
 modifications: AGPL3 is viral.
 
-If you want to deploy this commercially and lose the license, along
+**BUT - ** If you want to deploy this commercially and lose the license, along
 with, optionally, a support contract, contact me and we will arrange a
 commercial license in conformance with your purchasing department's
 policies.

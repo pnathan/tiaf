@@ -1,0 +1,27 @@
+* the manual
+
+** why
+
+Blockchains are interesting as a means of a distributed database with
+a trivial consensus algorithm.
+
+By presuming all interactors are trusted or managed,the coin/token
+incentive structure is removable.
+
+tiaf is thus closer to a _distributed ledger_.
+
+
+
+** server
+*** deploying
+see ./k8s/readme.org
+*** administering
+to be understood
+
+** clients
+*** api
+to be (re)written.
+*** cli
+to be (re)written.
+*** web
+does not exist

@@ -1,0 +1,22 @@
+tiaf is designed for deployment into kubernetes.
+
+The author has done substantial work with Helm, Pulumi, and some of
+Terraform for managing Kubernetes deployments, and his conclusion is:
+"a pox upon their houses". A proper Kubernetes package manager has yet
+to be written.
+
+See https://kustomize.io/ for the approach chosen here.
+
+
+(to be written: a hack in pulumi was done and checked in, but it's not
+very good)
+
+
+Broadly, what is set up:
+
+- ingress (if exposed out-cluster)
+- any TLS certs/configs you've chosen for your ingress.
+- Service to spread ingress traffic.
+- StatefulSet
+- ConfigMap set up for each pod in the statefulset to peer with each
+  other for getting/pushing data ASAP.

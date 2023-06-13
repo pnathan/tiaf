@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<!-- genuinely horrible html/js for tiaf. no libraries needed tho! -->
+<head>
+    <script>
+        let baseUrl = 'http://localhost:1337/api/v1';
+
+        function streams(end) {
+            async function get() {
+                let url = baseUrl + '/admin/' + end;
+                return await (await fetch(url)).json();
+            }
+
+            (async () => {
+                let tags = await get()
+                document.getElementById(end + "-abled").innerText = JSON.stringify(tags.sweeping);
+                document.getElementById(end + "-hosts").innerText = JSON.stringify(tags.hosts);
+            })();
+        }
+
+        function latestchain() {
+            async function get() {
+                let url = baseUrl + '/chain/tail/1';
+                return await (await fetch(url)).json();
+            }
+
+            var tags;
+            (async () => {
+                tags = await get()
+                document.getElementById("latest-chain").innerText = JSON.stringify(tags, null, 2);
+            })();
+        }
+
+        function stats() {
+            async function get() {
+                let url = baseUrl + '/statistics';
+                return await (await fetch(url)).json();
+            }
+
+            (async () => {
+                let tags = await get()
+                document.getElementById("stats").innerText = JSON.stringify(tags, null, 2);
+            })();
+        }
+
+        function datafy() {
+            async function put() {
+                let url = baseUrl + '/data';
+                let data = document.getElementById('datainput').value;
+
+                const requestOptions = {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({data: data})
+                };
+                return await (await fetch(url, requestOptions)).json();
+            }
+
+            (async () => {
+                let tags = await put()
+                document.getElementById("response").innerText = JSON.stringify(tags, null, 2);
+            })();
+        }
+
+        let apiKey = "";
+        function setApiKey() {
+            let apiKey = document.getElementById('apikey').value;
+            document.cookie = apiKey;
+        }
+
+
+        setInterval(stats, 3000);
+
+        function setBaseUrl() {
+            baseUrl = document.getElementById('baseurl').value;
+            document.getElementById('current').innerText = baseUrl;
+        }
+
+        function showBaseUrl() {
+            document.getElementById('current').innerText = baseUrl;
+        }
+
+
+        setInterval(showBaseUrl, 3000);
+
+
+    </script>
+</head>
+<body onload="showBaseUrl()">
+<h1>tiaf</h1>
+
+
+<div>
+    add some more data
+    <button onclick="datafy()">Click Me</button>
+    <input id="datainput" type="text"></input>
+    <div id="response"></div>
+</div>
+
+<div>
+    latest block on the chain
+    <button onclick="latestchain()">Click Me</button>
+    <pre>
+<div id="latest-chain"></div>
+</pre>
+
+</div>
+<div>
+    stats on the chain
+    <button onclick="stats()">Click Me</button>
+    <pre><div id="stats"></div></pre>
+</div>
+<table width="1" border="1">
+    <tr>
+        <td>
+            <div>
+                upstream information
+                <button onclick="streams('upstream')">Click Me</button>
+                <div id="upstream-abled"></div>
+                <div id="upstream-hosts"></div>
+            </div>
+        </td>
+        <td>
+            <div>
+                downstream information
+                <button onclick="streams('downstream')">Click Me</button>
+                <div id="downstream-abled"></div>
+                <div id="downstream-hosts"></div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <div>
+                set base url
+                <button onclick="setBaseUrl()">Click Me</button>
+                <input id="baseurl" type="text" value="http://localhost:1337/api/v1"></input>
+                <div id="current"></div>
+            </div>
+        </td>
+        <td>
+            set api key
+            <button onclick="setApiKey()">set key</button>
+            <input id="apikey" type="text"></input>
+        </td>
+
+    </tr>
+</table>
+
+
+
+
+
+</body>
+</html>

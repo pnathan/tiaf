@@ -1,0 +1,28 @@
+<html>
+<head>
+    <script type="text/javascript">
+        function setChainDiv(data) {
+            console.log(data);
+            let pp = JSON.stringify(data.data, null, 8);
+            document.getElementById("chain").innerHTML = pp;
+        }
+
+        function viewChain() {
+
+            fetch('http://localhost:9999/api/v1/chain')
+                .then(response => response.json())
+                .then(setChainDiv);
+        }
+    </script>
+</head>
+
+<body>
+<h1> tiaf</h1>
+<input type="button" onclick="viewChain()" value="ViewChain"/>
+<pre><div id="chain"></div></pre>
+<hr>
+
+thank you for visiting
+
+</body>
+</html>

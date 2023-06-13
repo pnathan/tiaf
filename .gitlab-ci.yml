@@ -1,10 +1,13 @@
+# 🦀🦀🦀 Carcinisation has occurred. 🦀🦀🦀
+# tiaf will be a rust project.
+
 # This file is a template, and might need editing before it works on your project.
 # To contribute improvements to CI/CD templates, please follow the Development guide at:
 # https://docs.gitlab.com/ee/development/cicd/templates.html
 # This specific template is located at:
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Go.gitlab-ci.yml
 
-image: golang:1.18beta1-alpine3.15
+image: rust:latest
 
 variables:
   # Please edit to your GitLab project
@@ -16,29 +19,58 @@ variables:
 # the default GOPATH being /go, then you'd need to have your
 # repository in /go/src/gitlab.com/namespace/project
 # Thus, making a symbolic link corrects this.
-before_script:
-  - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
-  - ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
-  - cd $GOPATH/src/$REPO_NAME
-  -  apk update && apk upgrade && apk add --no-cache bash git
+#before_script:
+#  - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
+#  - ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
+#  - cd $GOPATH/src/$REPO_NAME
+#  -  apk update && apk upgrade && apk add --no-cache bash git
 stages:
   - test
   - build
   - deploy
+#
+#format:
+#  stage: test
+#  script:
+#    - CGO_ENABLED=0 go fmt $(go list ./... | grep -v /vendor/)
+#    - CGO_ENABLED=0 go vet $(go list ./... | grep -v /vendor/)
+#    - CGO_ENABLED=0 go test $(go list ./... | grep -v /vendor/)
 
-format:
-  stage: test
-  script:
-    - CGO_ENABLED=0 go fmt $(go list ./... | grep -v /vendor/)
-    - CGO_ENABLED=0 go vet $(go list ./... | grep -v /vendor/)
-    - CGO_ENABLED=0 go test $(go list ./... | grep -v /vendor/)
+#go-compile:
+#  stage: build
+#  script:
+#    - CGO_ENABLED=0 go build -o tiaf-client src/cmd/client/main.go
+#    - CGO_ENABLED=0 go build -o tiaf src/cmd/server/main.go
+#  artifacts:
+#    paths:
+#      - tiaf
+#      - tiaf-client
 
-compile:
+.rust-default:
+  variables:
+    CARGO_HOME: "${CI_PROJECT_DIR}/cargo"
+  cache:
+    key: shared-cache
+    paths:
+      - cargo/
+      - target/
+
+rust-build:
+  extends: .rust-default
   stage: build
   script:
-    - CGO_ENABLED=0 go build -o tiaf-client src/cmd/client/main.go
-    - CGO_ENABLED=0 go build -o tiaf src/cmd/server/main.go
-  artifacts:
-    paths:
-      - tiaf
-      - tiaf-client
+    - cargo build --verbose
+
+rust-build-release:
+  extends: .rust-default
+  stage: build
+  script:
+    - cargo build --release --verbose
+  rules:
+    - when: manual
+
+rust-test:
+  extends: .rust-default
+  stage: test
+  script:
+    - cargo test --verbose
