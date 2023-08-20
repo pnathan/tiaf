@@ -1,11 +1,11 @@
-FROM rust:1.70.0-slim-bullseye as builder
+FROM rust:1.86.0-slim-bullseye as builder
 RUN apt-get update && apt-get install -y  pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/src/tiaf
 copy .cargo/ .cargo/
 copy vendor vendor/
 COPY Cargo.lock Cargo.lock
 COPY Cargo.toml Cargo.toml
-copy rust rust/
+copy src src/
 RUN cargo build --offline
 RUN cp ./target/debug/tiaf-server /tiaf-server
 FROM debian:bullseye-slim

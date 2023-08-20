@@ -1,5 +1,35 @@
-[workspace]
+[package]
+name = "tiaf"
+version = "0.1.0"
+edition = "2021"
 
-members = [
-    "rust",
+[dependencies]
+niqqud = "0.1.0"
+sha3 = "0.10.8"
+chrono = "0.4.42"
+serde_json = "1.0"
+serde = { version = "1", features = ["derive"] }
+rand = "0.8"
+rouille = "3.6"
+toml = "0.7"
+clap = { version = "4.5.47", features = ["derive"] }
+reqwest = { version = "0.11.27", features = ["blocking", "json"] }
+url = "2.5.7"
+regex = "1.11.2"
+prometheus-client = "0.21.2"
+[dependencies.unicode-bidi]
+version = "0.3.18"
+features = [
+    "hardcoded-data",
+    "std",
+    "serde",
+    "with_serde"
+]
+[dependencies.uuid]
+version = "1.18.1"
+features = [
+    "v4",                # Lets you generate random UUIDs
+    "fast-rng",          # Use a faster (but still sufficiently random) RNG
+    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+    "serde"
 ]
