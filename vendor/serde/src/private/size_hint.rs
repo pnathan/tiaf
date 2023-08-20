@@ -1,4 +1,4 @@
-use crate::lib::*;
+use lib::*;
 
 pub fn from_bounds<I>(iter: &I) -> Option<usize>
 where

@@ -1,13 +1,4 @@
-# Serde &emsp; [![Build Status]][actions] [![Latest Version]][crates.io] [![serde: rustc 1.19+]][Rust 1.19] [![serde_derive: rustc 1.56+]][Rust 1.56]
-
-[Build Status]: https://img.shields.io/github/actions/workflow/status/serde-rs/serde/ci.yml?branch=master
-[actions]: https://github.com/serde-rs/serde/actions?query=branch%3Amaster
-[Latest Version]: https://img.shields.io/crates/v/serde.svg
-[crates.io]: https://crates.io/crates/serde
-[serde: rustc 1.19+]: https://img.shields.io/badge/serde-rustc_1.19+-lightgray.svg
-[serde_derive: rustc 1.56+]: https://img.shields.io/badge/serde_derive-rustc_1.56+-lightgray.svg
-[Rust 1.19]: https://blog.rust-lang.org/2017/07/20/Rust-1.19.html
-[Rust 1.56]: https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html
+<!-- Serde readme rendered on crates.io -->
 
 **Serde is a framework for *ser*ializing and *de*serializing Rust data structures efficiently and generically.**
 
@@ -23,29 +14,6 @@ You may be looking for:
 - [Release notes](https://github.com/serde-rs/serde/releases)
 
 ## Serde in action
-
-<details>
-<summary>
-Click to show Cargo.toml.
-<a href="https://play.rust-lang.org/?edition=2018&gist=72755f28f99afc95e01d63174b28c1f5" target="_blank">Run this code in the playground.</a>
-</summary>
-
-```toml
-[dependencies]
-
-# The core APIs, including the Serialize and Deserialize traits. Always
-# required when using Serde. The "derive" feature is only required when
-# using #[derive(Serialize, Deserialize)] to make Serde work with structs
-# and enums defined in your crate.
-serde = { version = "1.0", features = ["derive"] }
-
-# Each data format lives in its own crate; the sample code below uses JSON
-# but you may be using a different one.
-serde_json = "1.0"
-```
-
-</details>
-<p></p>
 
 ```rust
 use serde::{Deserialize, Serialize};
@@ -78,7 +46,7 @@ fn main() {
 Serde is one of the most widely used Rust libraries so any place that Rustaceans
 congregate will be able to help you out. For chat, consider trying the
 [#rust-questions] or [#rust-beginners] channels of the unofficial community
-Discord (invite: <https://discord.gg/rust-lang-community>), the [#rust-usage] or
+Discord (invite: <https://discord.gg/rust-lang-community>, the [#rust-usage] or
 [#beginners] channels of the official Rust Project Discord (invite:
 <https://discord.gg/rust-lang>), or the [#general][zulip] stream in Zulip. For
 asynchronous, consider the [\[rust\] tag on StackOverflow][stackoverflow], the
@@ -95,20 +63,3 @@ closed without a response after some time.
 [stackoverflow]: https://stackoverflow.com/questions/tagged/rust
 [/r/rust]: https://www.reddit.com/r/rust
 [discourse]: https://users.rust-lang.org
-
-<br>
-
-#### License
-
-<sup>
-Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
-2.0</a> or <a href="LICENSE-MIT">MIT license</a> at your option.
-</sup>
-
-<br>
-
-<sub>
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in Serde by you, as defined in the Apache-2.0 license, shall be
-dual licensed as above, without any additional terms or conditions.
-</sub>

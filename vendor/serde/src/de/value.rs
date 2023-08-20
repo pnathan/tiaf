@@ -21,12 +21,12 @@
 //! }
 //! ```
 
-use crate::lib::*;
+use lib::*;
 
 use self::private::{First, Second};
-use crate::__private::size_hint;
-use crate::de::{self, Deserializer, Expected, IntoDeserializer, SeqAccess, Visitor};
-use crate::ser;
+use __private::size_hint;
+use de::{self, Deserializer, Expected, IntoDeserializer, SeqAccess, Visitor};
+use ser;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -937,8 +937,8 @@ where
     where
         V: de::Visitor<'de>,
     {
-        let v = tri!(visitor.visit_seq(&mut self));
-        tri!(self.end());
+        let v = try!(visitor.visit_seq(&mut self));
+        try!(self.end());
         Ok(v)
     }
 
@@ -1162,8 +1162,8 @@ where
     where
         V: de::Visitor<'de>,
     {
-        let value = tri!(visitor.visit_map(&mut self));
-        tri!(self.end());
+        let value = try!(visitor.visit_map(&mut self));
+        try!(self.end());
         Ok(value)
     }
 
@@ -1171,8 +1171,8 @@ where
     where
         V: de::Visitor<'de>,
     {
-        let value = tri!(visitor.visit_seq(&mut self));
-        tri!(self.end());
+        let value = try!(visitor.visit_seq(&mut self));
+        try!(self.end());
         Ok(value)
     }
 
@@ -1236,8 +1236,8 @@ where
     {
         match self.next_pair() {
             Some((key, value)) => {
-                let key = tri!(kseed.deserialize(key.into_deserializer()));
-                let value = tri!(vseed.deserialize(value.into_deserializer()));
+                let key = try!(kseed.deserialize(key.into_deserializer()));
+                let value = try!(vseed.deserialize(value.into_deserializer()));
                 Ok(Some((key, value)))
             }
             None => Ok(None),
@@ -1341,7 +1341,7 @@ where
         V: de::Visitor<'de>,
     {
         let mut pair_visitor = PairVisitor(Some(self.0), Some(self.1), PhantomData);
-        let pair = tri!(visitor.visit_seq(&mut pair_visitor));
+        let pair = try!(visitor.visit_seq(&mut pair_visitor));
         if pair_visitor.1.is_none() {
             Ok(pair)
         } else {
@@ -1501,7 +1501,7 @@ where
     where
         T: de::DeserializeSeed<'de>,
     {
-        match tri!(self.map.next_key_seed(seed)) {
+        match try!(self.map.next_key_seed(seed)) {
             Some(key) => Ok((key, private::map_as_enum(self.map))),
             None => Err(de::Error::invalid_type(de::Unexpected::Map, &"enum")),
         }
@@ -1546,11 +1546,9 @@ where
 ////////////////////////////////////////////////////////////////////////////////
 
 mod private {
-    use crate::lib::*;
+    use lib::*;
 
-    use crate::de::{
-        self, DeserializeSeed, Deserializer, MapAccess, Unexpected, VariantAccess, Visitor,
-    };
+    use de::{self, DeserializeSeed, Deserializer, MapAccess, Unexpected, VariantAccess, Visitor};
 
     pub struct UnitOnly<E> {
         marker: PhantomData<E>,
