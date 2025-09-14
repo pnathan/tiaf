@@ -139,7 +139,7 @@ impl Record {
             Err(format!("record hash mismatch: {} != {}", hash, self.hash))
         }
     }
-    pub fn structured_entry(&self) -> Result<KVRecord, String> {
+    pub fn structured_entry(&self) -> Result<KVRecord<'_>, String> {
         let j = serde_json::from_str(&self.entry).map_err(|e| e.to_string())?;
 
         Ok(KVRecord {
