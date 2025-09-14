@@ -1,5 +1,4 @@
 use crate::hexdisplay::HexDisplayExt;
-use crate::record::RecordErrors::Deserialization;
 use crate::types::{Hashtype, Time};
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
@@ -74,6 +73,7 @@ impl fmt::Display for Record {
     }
 }
 
+#[allow(dead_code)]
 enum RecordErrors {
     Deserialization(String),
 }
@@ -133,17 +133,17 @@ impl Record {
         let mut hasher = Sha3_256::new();
         hasher.update(bytes);
         let hash = hasher.finalize().to_vec().hex_display().to_string();
-        return if hash == self.hash {
+        if hash == self.hash {
             Ok(())
         } else {
             Err(format!("record hash mismatch: {} != {}", hash, self.hash))
-        };
+        }
     }
     pub fn structured_entry(&self) -> Result<KVRecord, String> {
         let j = serde_json::from_str(&self.entry).map_err(|e| e.to_string())?;
 
         Ok(KVRecord {
-            source: &self,
+            source: self,
             pairs: j,
         })
     }
@@ -151,7 +151,7 @@ impl Record {
 
 impl PartialEq for Record {
     fn eq(&self, other: &Self) -> bool {
-        return self.hash == other.hash;
+        self.hash == other.hash
     }
 }
 

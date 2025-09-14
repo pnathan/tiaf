@@ -2,16 +2,14 @@ use crate::chain::Blockchain;
 use crate::record::Record;
 use crate::woody::Attributes;
 
-#[macro_use]
-use crate::woody;
-#[macro_use]
-use crate::notes;
 use crate::mempool::MemPool;
+use crate::notes;
 use crate::query_chain;
+use crate::woody;
 
 use crate::api;
 use crate::api::{AdminKey, TiafBoringResponse, TiafDownstreams, TiafUpstreams};
-use crate::peers::{Downstreams, ReadHost, Upstreams};
+use crate::peers::{Downstreams, Upstreams};
 use query_chain::Queryable;
 use rouille::{Request, Response};
 use std::ops::Deref;
@@ -27,6 +25,7 @@ fn auth(request: &Request, admin_key: AdminKey) -> Result<(), Response> {
         })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn launch_server(
     node_id: String,
     ip: String,
@@ -39,8 +38,8 @@ pub fn launch_server(
 ) {
     let logger = woody::new(woody::Level::Info);
 
-    let endpoint = format!("{}:{}", ip, port);
-    logger.info(notes!(
+    let endpoint = format!("{ip}:{port}");
+    logger.lock().unwrap().info(notes!(
         "ts",
         chrono::Utc::now().to_rfc3339(),
         "msg",
@@ -50,7 +49,7 @@ pub fn launch_server(
     ));
 
     rouille::start_server(endpoint, move |request: &Request| {
-        use std::time::{Duration, Instant};
+        use std::time::Instant;
 
         let start = Instant::now();
         let ts = chrono::Utc::now();
@@ -95,18 +94,18 @@ pub fn launch_server(
                         rouille::Response::json(&response)
                     },
                     Err(e) => {
-                        logger.error(notes!("ts", chrono::Utc::now().to_rfc3339(), "error", e.to_string()));
+                        logger.lock().unwrap().error(notes!("ts", chrono::Utc::now().to_rfc3339(), "error", e.to_string()));
                         rouille::Response::json(&TiafBoringResponse::Error(e)).with_status_code(500)
                     }
                 }
             },
 
             (POST) (/api/v1/chain/compare) => {
-                let body: Blockchain = try_or_400!(rouille::input::json_input(&request));
+                let body: Blockchain = try_or_400!(rouille::input::json_input(request));
                 let b = blockchain.read().unwrap();
                 let result = b.compare_other_chain(&body);
 
-                logger.info(notes!("result", format!("{:?}", result)));
+                logger.lock().unwrap().info(notes!("result", format!("{:?}", result)));
                 rouille::Response::json(&api::TiafCompareResult{ result })
             },
             (OPTIONS) (/api/v1/chain/compare) => {
@@ -128,13 +127,13 @@ pub fn launch_server(
 
             // this is the conventional place to write rows to the data table
             (POST) (/api/v1/data) => {
-                let body: api::RecordPut = try_or_400!(rouille::input::json_input(&request));
+                let body: api::RecordPut = try_or_400!(rouille::input::json_input(request));
 
                 let mut mp = mem_pool.write().unwrap();
                 let r = Record::new(body.data);
                 _ = mp.put(r);
                 // log the write
-                logger.info(notes!("ts", chrono::Utc::now().to_rfc3339(), "msg", "data added to mempool".to_string()));
+                logger.lock().unwrap().info(notes!("ts", chrono::Utc::now().to_rfc3339(), "msg", "data added to mempool".to_string()));
 
                 rouille::Response::json(&TiafBoringResponse::Ok)
             },
@@ -144,11 +143,11 @@ pub fn launch_server(
 
             // the record endpoint is used for sharing new records between peers.
              (POST) (/api/v1/record) => {
-                let r: Record = try_or_400!(rouille::input::json_input(&request));
+                let r: Record = try_or_400!(rouille::input::json_input(request));
                 let mut mp = mem_pool.write().unwrap();
                 _ = mp.put(r);
                 // log the write
-                logger.info(notes!("ts", chrono::Utc::now().to_rfc3339(), "msg", "record added to mempool".to_string()));
+                logger.lock().unwrap().info(notes!("ts", chrono::Utc::now().to_rfc3339(), "msg", "record added to mempool".to_string()));
 
                 rouille::Response::json(&TiafBoringResponse::Ok)
             },
@@ -166,7 +165,7 @@ pub fn launch_server(
                         match b.query(clozed_query) {
                             Ok(result) => rouille::Response::json(&result),
                             Err(e) => {
-                                logger.error(notes!("ts", chrono::Utc::now().to_rfc3339(), "error", e.to_string()));
+                                logger.lock().unwrap().error(notes!("ts", chrono::Utc::now().to_rfc3339(), "error", e.to_string()));
                                 return rouille::Response::json(&TiafBoringResponse::Error(e))
                                 .with_status_code(400);
                             }
@@ -191,7 +190,7 @@ pub fn launch_server(
                 if let Err(x) = auth(request, admin_key.clone())  {
                     return x;
                 }
-                let r: TiafUpstreams = try_or_400!(rouille::input::json_input(&request));
+                let r: TiafUpstreams = try_or_400!(rouille::input::json_input(request));
                 // convert TiafUpstream to Upstreams
                 let mut input = upstreams.write().unwrap();
                 *input = Upstreams::from_api(&r);
@@ -221,7 +220,7 @@ pub fn launch_server(
                 if let Err(x) = auth(request, admin_key.clone())  {
                     return x;
                 }
-                let r: TiafDownstreams = try_or_400!(rouille::input::json_input(&request));
+                let r: TiafDownstreams = try_or_400!(rouille::input::json_input(request));
                 // convert TiafDownstream to Downstreams
                 let mut input = downstreams.write().unwrap();
                 *input = Downstreams::from_api(&r);
@@ -250,7 +249,7 @@ pub fn launch_server(
             _ => rouille::Response::empty_404());
 
         let code = result.status_code;
-        logger.info(vec![
+        logger.lock().unwrap().info(vec![
             Attributes::KV("ts", ts.to_rfc3339()),
             Attributes::KV("duration", format!("{:?}", start.elapsed()).to_string()),
             Attributes::KV("method", request.method().to_string()),

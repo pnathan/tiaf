@@ -42,7 +42,7 @@ impl PartialEq for Block {
     // Eq is constant time and relies on the hash to be calculated properly.
     fn eq(&self, other: &Self) -> bool {
         // Normative equality always requires a hash to be filled in.
-        return self.hash == other.hash && self.hash != "init";
+        self.hash == other.hash && self.hash != "init"
     }
 }
 
@@ -61,7 +61,7 @@ impl Block {
             data: vec![starter],
         };
         block.update_hash();
-        return block;
+        block
     }
     pub fn new(idx: u64, previous: Hashtype, records: Vec<Record>) -> Block {
         let now = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
@@ -76,7 +76,7 @@ impl Block {
             data: records,
         };
         block.update_hash();
-        return block;
+        block
     }
 
     pub fn previous_hash(&self) -> &Hashtype {
@@ -98,22 +98,18 @@ impl Block {
         for r in &self.data {
             hasher.update(&r.hash);
         }
-        return hasher.finalize().to_vec().hex_display().to_string();
+        hasher.finalize().to_vec().hex_display().to_string()
     }
 
     pub fn validate(&self) -> Result<(), String> {
-        if self.data.len() == 0 {
+        if self.data.is_empty() {
             return Err("Block has no records".to_string());
         }
-        if self.index == 0 {
-            if self.previous_hash != GENESIS_INIT_HASH {
-                return Err("Genesis block has invalid previous hash".to_string());
-            }
+        if self.index == 0 && self.previous_hash != GENESIS_INIT_HASH {
+            return Err("Genesis block has invalid previous hash".to_string());
         }
-        if self.index > 0 {
-            if self.previous_hash.len() == 0 {
-                return Err("Block has no previous hash".to_string());
-            }
+        if self.index > 0 && self.previous_hash.is_empty() {
+            return Err("Block has no previous hash".to_string());
         }
         if self.hash == BLOCK_INIT_HASH {
             return Err("Block is not initialized".to_string());

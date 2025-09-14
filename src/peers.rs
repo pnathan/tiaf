@@ -1,11 +1,8 @@
 // TODO: rename file to network or something beyond just peer
 use crate::api::{TiafClient, TiafDownstreams, TiafPartialChain, TiafUpstreams};
 use crate::chain::Blockchain;
-use crate::mempool::MemPool;
 use crate::record::Record;
 use crate::{notes, woody, Attributes};
-
-use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]
 pub struct WriteHost {
@@ -51,7 +48,7 @@ impl Downstreams {
     }
 
     pub fn from_api(api: &TiafDownstreams) -> Downstreams {
-        let hosts = api.hosts.iter().map(|h| WriteHost::new(h)).collect();
+        let hosts = api.hosts.iter().map(WriteHost::new).collect();
         Downstreams {
             hosts,
             sweeping: api.sweeping,
@@ -65,7 +62,7 @@ impl Downstreams {
         }
     }
     pub fn downstreams(&self) -> Vec<WriteHost> {
-        return self.hosts.iter().map(|p| p.clone()).collect();
+        self.hosts.to_vec()
     }
 }
 
@@ -102,7 +99,7 @@ impl Upstreams {
     }
 
     pub fn from_api(api: &TiafUpstreams) -> Upstreams {
-        let hosts = api.hosts.iter().map(|h| ReadHost::new(h)).collect();
+        let hosts = api.hosts.iter().map(ReadHost::new).collect();
         Upstreams {
             hosts,
             sweeping: api.sweeping,
@@ -117,7 +114,7 @@ impl Upstreams {
     }
 
     pub fn upstreams(&self) -> Vec<ReadHost> {
-        return self.hosts.iter().map(|p| p.clone()).collect();
+        self.hosts.to_vec()
     }
 
     pub fn set_sweeping(&mut self, sweeping: bool) {
@@ -133,26 +130,23 @@ impl Upstreams {
     }
 
     fn get_upstream(url: &str) -> Result<TiafPartialChain, String> {
-        match reqwest::blocking::get(url.clone()) {
-            Ok(resp) => {
-                // TODO: work out the proper API for this one.
-                match resp.json::<TiafPartialChain>() {
-                    Ok(chain) => Ok(chain),
-                    Err(e) => Err(format!("failed to parse json: {}", e)),
-                }
-            }
-            Err(e) => Err(format!("failed to get peer: {}", e)),
+        match reqwest::blocking::get(url) {
+            Ok(resp) => match resp.json::<TiafPartialChain>() {
+                Ok(chain) => Ok(chain),
+                Err(e) => Err(format!("failed to parse json: {e}")),
+            },
+            Err(e) => Err(format!("failed to get peer: {e}")),
         }
     }
 
     /// sweep_all_peers will sweep all upstreams and update the chain if a longer chain is found.
     /// This does not relate to the mempool.
     pub fn sweep_all_upstreams(&mut self, chain: &mut Blockchain) -> Result<(), String> {
-        let logger = woody::new(woody::Level::Info);
+        let logger = woody::new(woody::Level::Info).lock().unwrap();
         for host in &mut self.hosts {
             // get blocks of hashes from peer and compare list of hashes to existing chain.
             // if longer, request blocks from peer to glom on starting from the hash that wasn't seen.
-            /// TODO: work out proper api for this one.
+            // TODO: work out proper api for this one.
             let url = host.url.clone() + "/api/v1/chain";
             let other_chain = Upstreams::get_upstream(url.as_str())?;
             if other_chain.total_length > chain.length() {
@@ -165,7 +159,7 @@ impl Upstreams {
                     Some(idx) => {
                         logger.info(notes!(
                             "msg",
-                            format!("found starting index: {}", idx).to_string()
+                            format!("found starting index: {idx}").to_string()
                         ));
                         chain.append_blocks(other_chain.partial_blocks[idx..].to_vec())?;
                     }

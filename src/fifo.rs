@@ -1,6 +1,7 @@
 use crate::fifo::FifoError::{Empty, Full, Illogical};
 
 #[derive(Debug, PartialEq)]
+#[allow(dead_code)]
 pub enum FifoError {
     Full,
     Empty,
@@ -10,6 +11,7 @@ pub enum FifoError {
 // Fifo will be used as the key mempool structure, the prelim buffer that will be swept
 // into the Blockchain periodically.
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Fifo<T>
 where
     T: Clone,
@@ -21,6 +23,7 @@ where
     max_size: usize,
 }
 
+#[allow(dead_code)]
 impl<T> Fifo<T>
 where
     T: Clone,

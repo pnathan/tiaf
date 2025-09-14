@@ -1,9 +1,7 @@
 use crate::block::Block;
 use crate::chain::{Blockchain, ChainComparison};
-use crate::peers::Upstreams;
 use crate::record::Record;
 use serde::{Deserialize, Serialize};
-use std::ops::AddAssign;
 use url::Url;
 
 // API admin key type, methods, etc
@@ -80,6 +78,7 @@ pub struct TiafDownstreams {
 // API Client Code
 pub struct TiafClient {
     url: Url,
+    #[allow(dead_code)]
     admin_key: Option<AdminKey>,
 }
 
@@ -87,63 +86,60 @@ impl TiafClient {
     pub fn new(url: String, key: Option<String>) -> TiafClient {
         TiafClient {
             url: Url::parse(&url).unwrap(),
-            admin_key: match key {
-                Some(key) => Some(AdminKey::new(&key)),
-                None => None,
-            },
+            admin_key: key.map(|key| AdminKey::new(&key)),
         }
     }
     pub fn get_full_chain(&self) -> Result<Blockchain, String> {
         let url = match self.url.clone().join("/api/v1/chain") {
             Ok(url) => url,
-            Err(e) => return Err(format!("failed to form url: {}", e)),
+            Err(e) => return Err(format!("failed to form url: {e}")),
         };
         match reqwest::blocking::get(url) {
             Ok(resp) => match resp.json::<Blockchain>() {
                 Ok(chain) => Ok(chain),
-                Err(e) => Err(format!("failed to parse json: {}", e)),
+                Err(e) => Err(format!("failed to parse json: {e}")),
             },
-            Err(e) => Err(format!("failed to get chain: {}", e)),
+            Err(e) => Err(format!("failed to get chain: {e}")),
         }
     }
     pub fn get_chain_tail(&self, n: u64) -> Result<TiafPartialChain, String> {
         let url = match self
             .url
             .clone()
-            .join(format!("/api/v1/chain/tail/{}", n).as_str())
+            .join(format!("/api/v1/chain/tail/{n}").as_str())
         {
             Ok(url) => url,
-            Err(e) => return Err(format!("failed to form url: {}", e)),
+            Err(e) => return Err(format!("failed to form url: {e}")),
         };
         match reqwest::blocking::get(url) {
             Ok(resp) => match resp.json::<TiafPartialChain>() {
                 Ok(chain) => Ok(chain),
-                Err(e) => Err(format!("failed to parse json: {}", e)),
+                Err(e) => Err(format!("failed to parse json: {e}")),
             },
-            Err(e) => Err(format!("failed to get chain: {}", e)),
+            Err(e) => Err(format!("failed to get chain: {e}")),
         }
     }
     pub fn get_chain_since(&self, hash: &String) -> Result<TiafPartialChain, String> {
         let url = match self
             .url
             .clone()
-            .join(format!("/api/v1/chain/since/{}", hash).as_str())
+            .join(format!("/api/v1/chain/since/{hash}").as_str())
         {
             Ok(url) => url,
-            Err(e) => return Err(format!("failed to form url: {}", e)),
+            Err(e) => return Err(format!("failed to form url: {e}")),
         };
         match reqwest::blocking::get(url) {
             Ok(resp) => match resp.json::<TiafPartialChain>() {
                 Ok(chain) => Ok(chain),
-                Err(e) => Err(format!("failed to parse json: {}", e)),
+                Err(e) => Err(format!("failed to parse json: {e}")),
             },
-            Err(e) => Err(format!("failed to get chain: {}", e)),
+            Err(e) => Err(format!("failed to get chain: {e}")),
         }
     }
     pub fn post_compare(&self, chain: &Blockchain) -> Result<TiafCompareResult, String> {
         let url = match self.url.clone().join("/api/v1/chain/compare") {
             Ok(url) => url,
-            Err(e) => return Err(format!("failed to form url: {}", e)),
+            Err(e) => return Err(format!("failed to form url: {e}")),
         };
         match reqwest::blocking::Client::new()
             .post(url)
@@ -152,29 +148,29 @@ impl TiafClient {
         {
             Ok(resp) => match resp.json::<TiafCompareResult>() {
                 Ok(chain) => Ok(chain),
-                Err(e) => Err(format!("failed to parse json: {}", e)),
+                Err(e) => Err(format!("failed to parse json: {e}")),
             },
-            Err(e) => Err(format!("failed to get chain: {}", e)),
+            Err(e) => Err(format!("failed to get chain: {e}")),
         }
     }
     pub fn get_statistics(&self) -> Result<TiafStatistics, String> {
         let url = match self.url.clone().join("/api/v1/statistics") {
             Ok(url) => url,
-            Err(e) => return Err(format!("failed to form url: {}", e)),
+            Err(e) => return Err(format!("failed to form url: {e}")),
         };
         match reqwest::blocking::get(url) {
             Ok(resp) => match resp.json::<TiafStatistics>() {
                 Ok(chain) => Ok(chain),
-                Err(e) => Err(format!("failed to parse json: {}", e)),
+                Err(e) => Err(format!("failed to parse json: {e}")),
             },
-            Err(e) => Err(format!("failed to get chain: {}", e)),
+            Err(e) => Err(format!("failed to get chain: {e}")),
         }
     }
 
     pub fn put_data(&self, records: &RecordPut) -> Result<(), String> {
         let url = match self.url.clone().join("/api/v1/data") {
             Ok(url) => url,
-            Err(e) => return Err(format!("failed to form url: {}", e)),
+            Err(e) => return Err(format!("failed to form url: {e}")),
         };
         match reqwest::blocking::Client::new()
             .put(url)
@@ -185,14 +181,14 @@ impl TiafClient {
                 reqwest::StatusCode::OK => Ok(()),
                 _ => Err(format!("failed to put data: {}", resp.status())),
             },
-            Err(e) => Err(format!("failed to put data: {}", e)),
+            Err(e) => Err(format!("failed to put data: {e}")),
         }
     }
 
     pub fn put_record(&self, record: &Record) -> Result<(), String> {
         let url = match self.url.clone().join("/api/v1/record") {
             Ok(url) => url,
-            Err(e) => return Err(format!("failed to form url: {}", e)),
+            Err(e) => return Err(format!("failed to form url: {e}")),
         };
         match reqwest::blocking::Client::new()
             .put(url)
@@ -203,14 +199,14 @@ impl TiafClient {
                 reqwest::StatusCode::OK => Ok(()),
                 _ => Err(format!("failed to put record: {}", resp.status())),
             },
-            Err(e) => Err(format!("failed to put record: {}", e)),
+            Err(e) => Err(format!("failed to put record: {e}")),
         }
     }
 
     pub fn query(&self, query: String) -> Result<Vec<Record>, String> {
         let mut url = match self.url.clone().join("/api/v1/query/") {
             Ok(url) => url,
-            Err(e) => return Err(format!("failed to form url: {}", e)),
+            Err(e) => return Err(format!("failed to form url: {e}")),
         };
 
         url.set_query(Some(format!("q={}", &query).as_str()));
@@ -218,9 +214,9 @@ impl TiafClient {
         match reqwest::blocking::get(url) {
             Ok(resp) => match resp.json::<Vec<Record>>() {
                 Ok(records) => Ok(records),
-                Err(e) => Err(format!("failed to parse json: {}", e)),
+                Err(e) => Err(format!("failed to parse json: {e}")),
             },
-            Err(e) => Err(format!("failed to get chain: {}", e)),
+            Err(e) => Err(format!("failed to get chain: {e}")),
         }
     }
 }

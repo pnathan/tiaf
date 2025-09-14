@@ -4,7 +4,6 @@ use crate::record::Record;
 use std::collections::HashMap;
 use std::str::FromStr;
 /** Let us say that we impose a structure where a given queryable record has a list of keys and values **/
-
 pub enum QueryableError {}
 
 pub trait Queryable<F>
@@ -22,16 +21,12 @@ where
         let mut records: Vec<Record> = vec![];
         for block in self {
             for b in block.data.iter() {
-                match b.structured_entry() {
-                    Ok(r) => match predicate(r.pairs()) {
-                        Ok(out) => {
-                            if out {
-                                records.push(b.clone());
-                            }
+                if let Ok(r) = b.structured_entry() {
+                    if let Ok(out) = predicate(r.pairs()) {
+                        if out {
+                            records.push(b.clone());
                         }
-                        Err(_) => {}
-                    },
-                    Err(_) => {}
+                    }
                 }
             }
         }
@@ -60,16 +55,17 @@ impl Query {
             let mut parser_env = HashMap::<String, pratt::Value>::new();
 
             for (k, v) in env {
-                match i32::from_str(&v).map(|i| parser_env.insert(k.clone(), pratt::Value::Num(i)))
+                if i32::from_str(&v)
+                    .map(|i| parser_env.insert(k.clone(), pratt::Value::Num(i)))
+                    .is_ok()
                 {
-                    Ok(_) => break,
-                    Err(_) => {}
+                    break;
                 }
-                match bool::from_str(&v)
+                if bool::from_str(&v)
                     .map(|b| parser_env.insert(k.clone(), pratt::Value::Bool(b)))
+                    .is_ok()
                 {
-                    Ok(_) => break,
-                    Err(_) => {}
+                    break;
                 }
                 parser_env.insert(k.clone(), pratt::Value::Str(v));
             }

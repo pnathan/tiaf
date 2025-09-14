@@ -1,20 +1,16 @@
+use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::Display;
-use std::sync::Arc;
+use std::sync::Mutex;
 
-#[derive(Clone, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, PartialOrd, Serialize, Deserialize, Default)]
 pub enum Level {
     Error,
     Warn,
+    #[default]
     Info,
     Debug,
-}
-
-impl Default for Level {
-    fn default() -> Self {
-        Level::Info
-    }
 }
 
 // https://doc.rust-lang.org/rust-by-example/hello/print/print_display.html
@@ -38,7 +34,7 @@ impl Level {
             "warn" => Ok(Level::Warn),
             "info" => Ok(Level::Info),
             "debug" => Ok(Level::Debug),
-            _ => Err(format!("{} is not a valid level", s)),
+            _ => Err(format!("{s} is not a valid level")),
         }
     }
 
@@ -48,7 +44,7 @@ impl Level {
             1 => Ok(Level::Warn),
             2 => Ok(Level::Info),
             3 => Ok(Level::Debug),
-            _ => Err(format!("{} is not a valid level", x)),
+            _ => Err(format!("{x} is not a valid level")),
         }
     }
 }
@@ -57,22 +53,16 @@ impl Level {
 macro_rules! notes {
     // Do something interesting for a given pair of arguments
     ($a:expr, $b:expr) => {
-        {
-            let mut v = Vec::new();
-            v.push(Attributes::KV($a, $b));
-            v
-        }
+        vec![Attributes::KV($a, $b)]
     };
 
     // Recursively traverse the arguments
     ($a:expr, $b:expr, $($rest:expr),+) => {
         {
-            let mut v = Vec::new();
-            v.push(Attributes::KV($a, $b));
+            let mut v = vec![Attributes::KV($a, $b)];
             v.append(&mut notes!($($rest),*));
             v
         }
-
     };
     () => {};
 }
@@ -95,23 +85,13 @@ where
 #[derive(Clone)]
 pub struct Logger {
     level: Level,
-    gate: std::sync::Arc<std::sync::Mutex<u8>>,
 }
 
-// our friend.  This is a singleton.
-static mut LOGGER: Option<Logger> = None;
+static LOGGER: OnceCell<Mutex<Logger>> = OnceCell::new();
 
 // Returns an instance of our friend
-pub fn new(level: Level) -> Logger {
-    unsafe {
-        if LOGGER.is_none() {
-            LOGGER = Some(Logger {
-                level,
-                gate: std::sync::Arc::new(std::sync::Mutex::new(0)),
-            });
-        }
-        return LOGGER.clone().unwrap();
-    }
+pub fn new(level: Level) -> &'static Mutex<Logger> {
+    LOGGER.get_or_init(|| Mutex::new(Logger { level }))
 }
 
 fn format<T: Display, U: Display>(attrs: Vec<Attributes<T, U>>) -> String {
@@ -119,11 +99,11 @@ fn format<T: Display, U: Display>(attrs: Vec<Attributes<T, U>>) -> String {
     for attr in attrs {
         match attr {
             Attributes::S(s) => pass_on.push(s),
-            Attributes::KV(k, v) => pass_on.push(format!("{}={}", k, v)),
-            Attributes::Int(k, v) => pass_on.push(format!("{}={}", k, v)),
-            Attributes::String(k, v) => pass_on.push(format!("{}={}", k, v)),
-            Attributes::Bool(k, v) => pass_on.push(format!("{}={}", k, v)),
-            Attributes::Float(k, v) => pass_on.push(format!("{}={}", k, v)),
+            Attributes::KV(k, v) => pass_on.push(format!("{k}={v}")),
+            Attributes::Int(k, v) => pass_on.push(format!("{k}={v}")),
+            Attributes::String(k, v) => pass_on.push(format!("{k}={v}")),
+            Attributes::Bool(k, v) => pass_on.push(format!("{k}={v}")),
+            Attributes::Float(k, v) => pass_on.push(format!("{k}={v}")),
         }
     }
     pass_on.join(", ")
@@ -144,11 +124,8 @@ impl Logger {
     }
     pub fn log<T: Display, U: Display>(&self, level: Level, attrs: Vec<Attributes<T, U>>) {
         if level <= self.level {
-            let mut m = self.gate.lock().unwrap();
             let msg = format(attrs);
-            println!("{}, {}", level, msg);
-            // try to trick the compiler to not optimize this away.
-            *m = 10;
+            println!("{level}, {msg}");
         }
     }
 }
@@ -159,7 +136,7 @@ mod tests {
 
     #[test]
     fn test_logline() {
-        let logger = new(Level::Info);
+        let logger = new(Level::Info).lock().unwrap();
         logger.error(notes!("foo", "bar"));
         logger.warn(notes!("foo", "bar"));
         logger.info(notes!("foo", "bar"));
