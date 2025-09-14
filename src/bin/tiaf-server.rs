@@ -1,12 +1,9 @@
-use tiaf;
-
 use clap::Parser;
 
 use rand::Rng;
 use std::thread;
 use std::time::Duration;
 
-use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 use tiaf::api::AdminKey;
@@ -37,7 +34,7 @@ struct DownstreamsNotifier {
 
 // or do we have a fifo queue that flushes to network?
 fn downstream_notifying_daemon(args: DownstreamsNotifier) {
-    let logger = woody::new(woody::Level::Info);
+    let logger = woody::new(woody::Level::Info).lock().unwrap();
     loop {
         downstream_notify(&args, &logger);
         logger.info(notes!(
@@ -71,7 +68,7 @@ fn downstream_notify(args: &DownstreamsNotifier, logger: &Logger) {
                             "ts",
                             chrono::Utc::now().to_rfc3339(),
                             "msg",
-                            format!("failed to notify downstream of record: {}", e).to_string()
+                            format!("failed to notify downstream of record: {e}").to_string()
                         ));
                     }
                 }
@@ -95,7 +92,7 @@ struct PoolSweeper {
 }
 
 fn pool_sweeping_daemon(args: PoolSweeper) {
-    let logger = woody::new(woody::Level::Info);
+    let logger = woody::new(woody::Level::Info).lock().unwrap();
     loop {
         {
             pool_sweep(&args, &logger);
@@ -130,7 +127,7 @@ fn pool_sweep(args: &PoolSweeper, logger: &Logger) {
                     "ts",
                     chrono::Utc::now().to_rfc3339(),
                     "msg",
-                    format!("failed to append records to chain: {}", e).to_string()
+                    format!("failed to append records to chain: {e}").to_string()
                 ));
             }
         }
@@ -146,7 +143,7 @@ struct UpstreamSweeper {
 /// upstream_sweeping_daemon is a daemon that periodically sweeps all peers in the Peers
 /// struct. It will attempt to update the blockchain
 fn upstream_sweeping_daemon(args: UpstreamSweeper) {
-    let logger = woody::new(woody::Level::Info);
+    let logger = woody::new(woody::Level::Info).lock().unwrap();
     loop {
         upstream_sweep(&args, &logger);
         logger.info(notes!(
@@ -177,7 +174,7 @@ fn upstream_sweep(args: &UpstreamSweeper, logger: &Logger) {
                     "ts",
                     chrono::Utc::now().to_rfc3339(),
                     "msg",
-                    format!("failed to sweep upstreams: {}", e).to_string()
+                    format!("failed to sweep upstreams: {e}").to_string()
                 ));
             }
         }
@@ -259,13 +256,13 @@ fn parse_arguments() -> Result<ServerConfig, String> {
         let config = match std::fs::read_to_string(config) {
             Ok(c) => c,
             Err(e) => {
-                return Err(format!("failed to read config file: {}", e));
+                return Err(format!("failed to read config file: {e}"));
             }
         };
         server_config = match toml::from_str(&config) {
             Ok(c) => c,
             Err(e) => {
-                return Err(format!("failed to parse config file: {}", e));
+                return Err(format!("failed to parse config file: {e}"));
             }
         }
     }
@@ -288,8 +285,8 @@ fn parse_arguments() -> Result<ServerConfig, String> {
     if let Some(log_level) = cli.log_level {
         server_config.log_level = Level::from_string(log_level.as_str())?;
     }
-    println!("{:?}", server_config);
-    return Ok(server_config);
+    println!("{server_config:?}");
+    Ok(server_config)
 }
 
 #[derive(Clone)]
@@ -301,7 +298,7 @@ struct ServerGlobals {
 }
 
 fn main() {
-    let logger = woody::new(woody::Level::Info);
+    let logger = woody::new(woody::Level::Info).lock().unwrap();
 
     let server_config = parse_arguments().unwrap();
     logger.debug(notes!("server_config", format!("{:?}", server_config)));
@@ -377,7 +374,7 @@ mod toplevel {
 
     #[test]
     fn exercise() {
-        let r = Record::genesis_record();
+        let _r = Record::genesis_record();
         let r2 = Record::new("sixes".to_string());
         let r3 = Record::new("sevens".to_string());
         let r4 = Record::new("eights".to_string());
@@ -392,7 +389,7 @@ mod toplevel {
             _ = b.append_records(rs.to_vec());
             _ = b.append_records(rs2.to_vec());
             let j = b.to_json(true).unwrap();
-            let bb = Blockchain::from_json(j).unwrap();
+            let _bb = Blockchain::from_json(j).unwrap();
         }
     }
 }

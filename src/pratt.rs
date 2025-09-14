@@ -3,8 +3,6 @@ use crate::pratt::ExpressionError::{
 };
 use core::fmt;
 use std::collections::HashMap;
-use std::error::Error;
-use std::fmt::Display;
 use std::str::FromStr;
 
 #[derive(Eq, Debug, PartialEq)]
@@ -19,8 +17,8 @@ pub enum ExpressionError {
 impl fmt::Display for ExpressionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            UnexpectedToken(t) => write!(f, "Unexpected token: {:?}", t),
-            UnboundVariable(v) => write!(f, "Unbound variable: {}", v),
+            UnexpectedToken(t) => write!(f, "Unexpected token: {t:?}"),
+            UnboundVariable(v) => write!(f, "Unbound variable: {v}"),
             UnsupportedOperation => write!(f, "Unsupported operation"),
             RanOutOfTokens => write!(f, "Ran out of tokens"),
             DidntGetRightParen => write!(f, "Didn't get right paren"),
@@ -51,10 +49,10 @@ impl fmt::Display for Token {
             Token::Minus => write!(f, "-"),
             Token::Multiply => write!(f, "*"),
             Token::Equals => write!(f, "="),
-            Token::Num(n) => write!(f, "{}", n),
-            Token::Var(v) => write!(f, "{}", v),
-            Token::Str(s) => write!(f, "{}", s),
-            Token::Bool(b) => write!(f, "{}", b),
+            Token::Num(n) => write!(f, "{n}"),
+            Token::Var(v) => write!(f, "{v}"),
+            Token::Str(s) => write!(f, "{s}"),
+            Token::Bool(b) => write!(f, "{b}"),
             Token::ParenOpen => write!(f, "("),
             Token::ParenClose => write!(f, ")"),
             Token::NotEquals => write!(f, "!="),
@@ -188,9 +186,9 @@ pub enum Value {
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Value::Str(s) => write!(f, "{}", s),
-            Value::Num(n) => write!(f, "{}", n),
-            Value::Bool(b) => write!(f, "{}", b),
+            Value::Str(s) => write!(f, "{s}"),
+            Value::Num(n) => write!(f, "{n}"),
+            Value::Bool(b) => write!(f, "{b}"),
         }
     }
 }

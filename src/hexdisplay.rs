@@ -15,7 +15,7 @@ impl fmt::Display for HexSlice<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for byte in self.0 {
             // Decide if you want to pad the value or have spaces inbetween, etc.
-            write!(f, "{:X}", byte)?;
+            write!(f, "{byte:X}")?;
         }
         Ok(())
     }

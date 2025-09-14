@@ -47,7 +47,7 @@ impl<'a> IntoIterator for &'a Blockchain {
     type IntoIter = ChainIter<'a>;
     fn into_iter(self) -> Self::IntoIter {
         ChainIter {
-            inner: &self,
+            inner: self,
             idx: 0,
         }
     }
@@ -64,7 +64,13 @@ impl<'a> Iterator for ChainIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         let idx = self.idx;
         self.idx += 1;
-        self.inner.data.get(&idx).map(|x| x.clone())
+        self.inner.data.get(&idx).cloned()
+    }
+}
+
+impl Default for Blockchain {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -74,7 +80,7 @@ impl Blockchain {
         let genesis = Block::genesis();
         data.insert(0, genesis.clone());
         Blockchain {
-            data: data,
+            data,
             size: 1,
             max_verified: 0,
             known_record_hashes: vec![genesis.data[0].hash.clone()],
@@ -97,12 +103,12 @@ impl Blockchain {
         tail
     }
 
-    pub fn since(&self, h: &String) -> Result<Vec<&Block>, String> {
+    pub fn since(&self, h: &str) -> Result<Vec<&Block>, String> {
         let mut tail: Vec<&Block> = Vec::new();
         let mut idx = self.size - 1;
         while idx > 0 {
             let block = self.get(idx).ok_or("failure to walk chain")?;
-            if block.hash == h.as_str() {
+            if block.hash == h {
                 break;
             }
             tail.push(block);
@@ -118,7 +124,7 @@ impl Blockchain {
         }
         for i in self.max_verified..self.size {
             self.data
-                .get(&(i as u64))
+                .get(&{ i })
                 .ok_or("no data found at index")?
                 .validate()?
         }
@@ -131,7 +137,7 @@ impl Blockchain {
         }
         for i in self.max_verified..self.size {
             self.data
-                .get(&(i as u64))
+                .get(&{ i })
                 .ok_or("no data found at index")?
                 .validate()?
         }
@@ -179,11 +185,11 @@ impl Blockchain {
 
     pub fn append_blocks(&mut self, blocks: Vec<Block>) -> Result<(), String> {
         // check that the first block in the list is the next block in the chain.
-        if blocks[0].previous_hash().to_string() != self.get(self.size - 1).unwrap().hash {
+        if *blocks[0].previous_hash() != self.get(self.size - 1).unwrap().hash {
             return Err("blockchain does not match".to_string());
         }
 
-        let mut blocks = blocks.clone();
+        let blocks = blocks.clone();
         for block in &blocks {
             self.known_block_hashes.push(block.hash.clone());
         }
@@ -223,7 +229,7 @@ impl Blockchain {
             Ok(_) => {}
             Err(s) => {
                 return ChainComparison::Invalid(
-                    format!("candidate chain is invalid: {}", s).to_string(),
+                    format!("candidate chain is invalid: {s}").to_string(),
                 );
             }
         }
@@ -243,17 +249,17 @@ pub enum ChainComparison {
     Invalid(String),
 }
 
+#[allow(dead_code)]
 fn deserialize_blocks<T>(links: Vec<Block>) -> Result<Vec<T>, String>
 where
     T: DeserializeOwned,
 {
     let mut records: Vec<T> = vec![];
     for l in links {
-        println!("block: {:?}", l);
+        println!("block: {l:?}");
         for r in l.data {
-            match serde_json::from_str(r.entry.as_str()) {
-                Ok(record) => records.push(record),
-                Err(_) => {}
+            if let Ok(record) = serde_json::from_str(r.entry.as_str()) {
+                records.push(record)
             }
         }
     }
@@ -314,7 +320,7 @@ mod tests {
                 records.push(r);
             }
         }
-        let mut block = Block::new(0, "0".to_string(), records);
+        let block = Block::new(0, "0".to_string(), records);
         blocks.push(block);
         let json = serde_json::to_string_pretty(&blocks).unwrap();
         let blocks: Vec<Block> = serde_json::from_str(&json).unwrap();
